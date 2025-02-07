@@ -34,8 +34,10 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/', [ProductFrontController::class, 'index'])->name('products.index');
 Route::get('/products/{slug}', [ProductFrontController::class, 'show'])->name('products.show');
-Route::post('/checkout', [PaymentController::class, 'processPayment'])->name('checkout.process');
-Route::post('/checkout/callback', [PaymentController::class, 'handleCallback'])->name('checkout.callback');
+Route::post('/cart/checkout', [PaymentController::class, 'handleCheckout'])->name('cart.checkout');
+Route::post('/payment/callback', [PaymentController::class, 'handleCallback'])->name('payment.callback');
+Route::get('/payment/success', [PaymentController::class, 'handleSuccess'])->name('payment.success');
+
 
 
 // Route::get('/transaction', [TransactionController::class, 'index'])->name('transaction.index');
@@ -47,6 +49,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/cart/add/{product}', [CartController::class, 'add'])->name('cart.add');
     Route::put('/cart/update/{id}', [CartController::class, 'update'])->name('cart.update');
     Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
+    // Route::post('/cart/checkout', [CartController::class, 'storeTransaction'])->name('cart.checkout');
+
 });
 
 require __DIR__.'/auth.php';

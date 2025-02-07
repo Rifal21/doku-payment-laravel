@@ -66,173 +66,92 @@
           Proceed to Checkout
         </a>
       </div>
-
     @else
       <p class="text-gray-600">Your cart is empty!</p>
     @endif
   </div>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://staging.doku.com/doku-js/assets/js/doku.js"></script>
-
-  {{-- <script>
-    $('#checkoutButton').on('click', function (e) {
-      e.preventDefault();
-  
-      const amount = {{ $totalPrice }};
-  
-      $.ajax({
-        url: '{{ route('checkout.process') }}',
-        type: 'POST',
-        headers: {
-          'Client-Id': '{{ env('DOKU_CLIENT_ID') }}',
-          'Request-Id': Date.now().toString(),
-        },
-        data: {
-          amount: amount,
-          _token: '{{ csrf_token() }}'
-        },
-        success: function (response) {
-          if (response.payment_url) {
-            window.open(response.payment_url, '_blank', 'width=500,height=600');
-          }
-        },
-        error: function (xhr) {
-          alert('Failed to process payment');
-          console.error(xhr.responseText);
-        }
-      });
-    });
-  </script> --}}
-
-  {{-- <script>
-    $('#checkoutButton').on('click', function (e) {
-      e.preventDefault();
-  
-      const amount = {{ $totalPrice }};
-    
-      $.ajax({
-        url: '{{ route('checkout.process') }}',
-        type: 'POST',
-        data: {
-          amount: amount,
-          _token: '{{ csrf_token() }}'
-        },
-        success: function (response) {
-          console.log(response);
-          if (response.payment_data) {
-            // Menampilkan modal pembayaran DOKU
-            DokuPayment.init({
-              paymentData: response.payment_data,
-              onPaymentSuccess: function (result) {
-                alert("Payment successful!");
-                window.location.href = '{{ route('products.index') }}';
-              },
-              onPaymentError: function (error) {
-                alert("Payment failed. Please try again.");
-                console.error(error);
-              }
-            });
-          }
-        },
-        error: function (xhr) {
-          alert('Failed to process payment');
-          console.error(xhr.responseText);
-        }
-      });
-    });
-  </script> --}}
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script>
-    function payment() {
-      const requestTarget = "/checkout/v1/payment";
-      const clientId = "{{ env('DOKU_CLIENT_ID') }}";
-      const sharedKey = "{{ env('DOKU_SHARED_KEY') }}";
-      const invoice = 'INV' + Math.floor(Math.random() * (100000 - 200000)) + 100000;
-      const requestDate = new Date().toISOString().slice(0, 19) + "Z";
-      const environmentUrl = 'https://sandbox.doku.com';
-      
-      // Prepare Body
-      const body = prepareBody(invoice);
-  
-      // Create Header
-      const headers = createHeader(body, clientId, sharedKey, invoice, requestDate, requestTarget);
-  
-      // AJAX Request
-      fetch(environmentUrl + requestTarget, {
-        method: 'POST',
-        headers: headers,
-        body: body,
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.response && data.response.payment.url) {
-            // Tampilkan modal pembayaran
-            loadJokulCheckout(data.response.payment.url);
-          } else {
-            showAlert('Gagal memproses pembayaran. Silakan coba lagi.');
-          }
-        })
-        .catch((error) => {
-          showAlert('Terjadi kesalahan saat menghubungi server.');
-          console.error(error);
-        });
-    }
-  
-    function prepareBody(invoice) {
-      const customerName = "{{ $user->name ?? 'Customer' }}";
-      const customerEmail = "{{ $user->email ?? 'email@customer.com' }}";
-      const orderAmount = {{ $totalPrice }};
-      const callbackUrl = "{{ route('checkout.callback') }}";
-      
-      return JSON.stringify({
-        customer: {
-          id: "{{ $user->id ?? '12345' }}",
-          name: customerName,
-          email: customerEmail,
-          phone: "081234567890",
-        },
-        order: {
-          amount: orderAmount,
-          callback_url: callbackUrl,
-          currency: "IDR",
-          invoice_number: invoice,
-        },
-        payment: {
-          payment_due_date: 60,
-        },
-      });
-    }
-  
-    function createHeader(body, clientId, sharedKey, invoice, requestDate, requestTarget) {
-      const digest = CryptoJS.enc.Base64.stringify(CryptoJS.SHA256(body));
-      const rawSignature = [
-        `Client-Id:${clientId}`,
-        `Request-Id:${invoice}`,
-        `Request-Timestamp:${requestDate}`,
-        `Request-Target:${requestTarget}`,
-        `Digest:${digest}`,
-      ].join("\n");
-  
-      const signature = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(rawSignature, sharedKey));
-  
-      return new Headers({
+  function payment() {
+    const cartItems = @json($cartItems);
+    const totalPrice = {{ $totalPrice ?? 0}};
+    const invoice = 'INV' + Math.floor(Math.random() * (100000 - 200000)) + 100000;
+
+    // Kirim permintaan ke Laravel untuk memproses pembayaran
+    fetch("{{ route('cart.checkout') }}", {
+      method: "POST",
+      headers: {
         "Content-Type": "application/json",
-        "Signature": `HMACSHA256=${signature}`,
-        "Request-Id": invoice,
-        "Client-Id": clientId,
-        "Request-Timestamp": requestDate,
-      });
-    }
-  
-    function showAlert(message) {
-      swal({
-        title: "Payment Error",
-        text: message,
-        icon: "error",
-        button: "Close",
-      });
-    }
+        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+      },
+      body: JSON.stringify({
+        cart_items: cartItems,
+        total_price: totalPrice,
+        invoice_number: invoice,
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && data.payment_url) {
+          // Tampilkan popup DOKU
+          loadJokulCheckout(data.payment_url);
+
+          // Event listener untuk menangani callback dari DOKU
+          window.addEventListener("message", function(event) {
+              if (event.data && event.data.payment_status === "SUCCESS") {
+                  updateTransactionStatus(invoice);
+              }
+          });
+      } else {
+        showAlert("Gagal memproses pembayaran. Silakan coba lagi.");
+      }
+    })
+    .catch(error => {
+      showAlert("Terjadi kesalahan saat memproses pembayaran.");
+      console.error(error);
+    });
+}
+
+// function updateTransactionStatus(invoice) {
+//     fetch("{{ route('payment.callback') }}", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+//       },
+//       body: JSON.stringify({
+//         status: "SUCCESS",
+//         invoice_number: invoice
+//       })
+//     })
+//     .then(response => response.json())
+//     .then(data => {
+//       if (data.success) {
+//         Swal.fire("Pembayaran Berhasil", "Transaksi Anda telah diperbarui.", "success");
+//       } else {
+//         Swal.fire("Error", "Terjadi kesalahan saat memperbarui transaksi.", "error");
+//       }
+//     })
+//     .catch(error => {
+//       Swal.fire("Error", "Terjadi kesalahan saat memperbarui transaksi.", "error");
+//       console.error(error);
+//     });
+// }
+
+
+
+  function showAlert(message) {
+    Swal.fire({
+      title: "Payment Error",
+      text: message,
+      icon: "error",
+      button: "Close",
+    });
+  }
+
   </script>
   
   
