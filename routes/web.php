@@ -34,9 +34,10 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/', [ProductFrontController::class, 'index'])->name('products.index');
 Route::get('/products/{slug}', [ProductFrontController::class, 'show'])->name('products.show');
-Route::post('/cart/checkout', [PaymentController::class, 'handleCheckout'])->name('cart.checkout');
-Route::post('/payment/callback', [PaymentController::class, 'handleCallback'])->name('payment.callback');
-Route::get('/payment/success', [PaymentController::class, 'handleSuccess'])->name('payment.success');
+// Route::post('/cart/checkout', [PaymentController::class, 'handleCheckout'])->name('cart.checkout');
+// Route::post('/payment/callback', [PaymentController::class, 'handleCallback'])->name('payment.callback');
+// Route::get('/payment/success', [PaymentController::class, 'handleSuccess'])->name('payment.success');
+Route::post('/payment/headers' , [PaymentController::class, 'getPaymentHeaders'])->name('payment.headers');
 
 
 
