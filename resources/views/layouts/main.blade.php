@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     {{-- @vite('resources/css/app.css') --}}
-    <link rel="stylesheet" href="build/assets/app-C0dWc0rN.css">
+    <link rel="stylesheet" href="build/assets/app-BFXtsio3.css">
     <script src="https://sandbox.doku.com/jokul-checkout-js/v1/jokul-checkout-1.0.0.js"></script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
   </head>
