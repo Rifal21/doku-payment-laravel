@@ -109,7 +109,6 @@
                     showAlert("Gagal mendapatkan header pembayaran.");
                     return;
                 }
-                console.log(data);
                 // 2️⃣ Kirim Request ke DOKU dengan Header Signature yang Diterima
                 fetch("https://api-sandbox.doku.com" + data.request_target, {
                         method: "POST",
@@ -118,9 +117,11 @@
                     })
                     .then(response => response.json())
                     .then(responseData => {
+                        console.log(responseData);
                         if (responseData.response && responseData.response.payment && responseData.response.payment.url) {
                             // 3️⃣ Redirect ke halaman pembayaran DOKU
-                            loadJokulCheckout(responseData.response.payment.url);
+                            // loadJokulCheckout(responseData.response.payment.url);
+                            window.location.href = responseData.response.payment.url;
                         } else {
                             showAlert("Gagal memproses pembayaran.");
                         }
