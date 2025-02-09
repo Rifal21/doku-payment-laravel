@@ -100,7 +100,7 @@ class PaymentController extends Controller
                 'amount' => $amount,
                 'currency' => "IDR",
                 'invoice_number' => $validated['invoice_number'],
-                'callback_url' => url('/api/doku/webhook'),
+                'callback_url' => url('/'),
                 'return_url' => url('/payment/success'),
                 'line_items' => $orderLines,
             ],
