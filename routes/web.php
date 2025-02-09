@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminTransactionController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductFrontController;
@@ -22,9 +23,10 @@ use Illuminate\Support\Facades\Route;
 //     return view('welcome');
 // });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [AdminTransactionController::class , 'index'])->middleware(['auth', 'verified'])->name('dashboard.index');
+Route::get('/dashboard/transactions' , [AdminTransactionController::class , 'transaction'] )->middleware(['auth', 'verified'])->name('dashboard.transactions');
+Route::get('/dashboard/transactions/{invoice}' , [AdminTransactionController::class , 'show'] )->middleware(['auth', 'verified'])->name('dashboard.transactions.show');
+Route::delete('/dashboard/transactions/{id}' , [AdminTransactionController::class , 'destroy'] )->middleware(['auth', 'verified'])->name('dashboard.transactions.delete');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
