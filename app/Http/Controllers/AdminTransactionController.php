@@ -68,7 +68,7 @@ class AdminTransactionController extends Controller
     }
 
     public function transaction() {
-        $transactions = Transaction::latest()->paginate(10);
+        $transactions = Transaction::latest()->get();
         return view('admin.transaction', compact('transactions'));
     }
 }
