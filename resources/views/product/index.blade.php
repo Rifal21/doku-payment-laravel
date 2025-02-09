@@ -5,6 +5,30 @@
     Product Index
   </h1> --}}
 
+  @if (session('success'))
+    <script>
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: '{{ session('success') }}',
+        showConfirmButton: false,
+        timer: 3000
+      });
+    </script>
+  @endif
+
+  @if (session('error'))
+    <script>
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: '{{ session('error') }}',
+        showConfirmButton: false,
+        timer: 3000
+      });
+    </script>
+  @endif
+
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-5">
     @foreach ($products as $product)
       <div class="bg-white shadow-lg rounded-2xl overflow-hidden hover:scale-105 transform transition duration-300">

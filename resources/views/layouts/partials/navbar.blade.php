@@ -1,7 +1,7 @@
 <nav class="flex items-center justify-between flex-wrap bg-teal-500 p-6">
   <div class="flex items-center flex-shrink-0 text-white mr-6">
     <a href="#" class="text-white no-underline hover:text-white hover:no-underline">
-      <span class="text-2xl pl-2"><i class="em em-grinning"></i> Logo</span>
+      <img src="../image/logo.png" alt="" class="h-12 w-12">
     </a>
   </div>
 
