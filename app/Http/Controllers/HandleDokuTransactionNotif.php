@@ -10,40 +10,41 @@ class HandleDokuTransactionNotif extends Controller
 {
     public function handleNotification(Request $request)
     {
-        // dd($request->all());
-        Log::info('📩 Doku Webhook Received:', $request->all());
+        // $data = $request->getContent();
 
-        $data = $request->all();
 
-        if (!isset($data['transaction']) || !isset($data['order'])) {
-            Log::error('🚨 Invalid Doku Webhook Data:', $data);
-            return response()->json(['message' => 'Invalid request'], 400);
+        $notificationHeader = getallheaders();
+        $notificationBody = file_get_contents('php://input');
+            $notificationPath = '/api/doku/notif-hook'; // Adjust according to your notification path
+            $secretKey = env('DOKU_SHARED_KEY'); // Adjust according to your secret key
+            
+            $digest = base64_encode(hash('sha256', $notificationBody, true));
+            $rawSignature = "Client-Id:" . $notificationHeader['Client-Id'] . "\n"
+            . "Request-Id:" . $notificationHeader['Request-Id'] . "\n"
+            . "Request-Timestamp:" . $notificationHeader['Request-Timestamp'] . "\n"
+            . "Request-Target:" . $notificationPath . "\n"
+            . "Digest:" . $digest;
+            
+            $signature = base64_encode(hash_hmac('sha256', $rawSignature, $secretKey, true));
+            // dd($signature);
+            $finalSignature = 'HMACSHA256=' . $signature;
+            // dd($finalSignature);
+            // dd($notificationHeader);
+            if ($finalSignature == $notificationHeader['Signature']) {
+                // TODO: Process if Signature is Valid
+                dd('ok');
+                // return response('OK', 200)->header('Content-Type', 'text/plain');
+                
+                // TODO: Do update the transaction status based on the `transaction.status`
+            } else {
+            
+                dd('tolol');
+            // TODO: Response with 400 errors for Invalid Signature
+            // return response('Invalid Signature', 400)->header('Content-Type', 'text/plain');
         }
 
-        $invoiceNumber = $data['order']['invoice_number'];
-        $status = $data['transaction']['status'];
-
-        $transaction = Transaction::where('invoice_number', $invoiceNumber)->first();
-
-        if (!$transaction) {
-            Log::error("🚨 Transaction not found for invoice: $invoiceNumber");
-            return response()->json(['message' => 'Transaction not found'], 404);
-        }
-
-        switch ($status) {
-            case 'SUCCESS':
-                $transaction->update(['status' => 'paid']);
-                break;
-            case 'FAILED':
-                $transaction->update(['status' => 'failed']);
-                break;
-            case 'PENDING':
-                $transaction->update(['status' => 'pending']);
-                break;
-        }
-
-        Log::info("✅ Transaction $invoiceNumber updated to $status");
-
-        return response()->json(['message' => 'Notification received successfully'], 200);
+       
     }
+
+
 }
