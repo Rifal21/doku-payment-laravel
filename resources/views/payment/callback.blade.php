@@ -1,7 +1,7 @@
 @extends('layouts.main')
 
 @section('content')
-<div class="min-h-screen flex items-center justify-center bg-gray-100">
+<div class="min-h-screen min-w-full flex items-center justify-center bg-gray-100">
     <div class="bg-white p-8 rounded-2xl shadow-lg max-w-md text-center">
         <div class="flex justify-center">
             <svg class="w-20 h-20 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
