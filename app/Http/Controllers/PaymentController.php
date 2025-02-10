@@ -100,7 +100,7 @@ class PaymentController extends Controller
                 'amount' => $amount,
                 'currency' => "IDR",
                 'invoice_number' => $validated['invoice_number'],
-                'callback_url' => url('/'),
+                'callback_url' => url('/payment/callback'),
                 'return_url' => url('/payment/success'),
                 'line_items' => $orderLines,
             ],
@@ -159,5 +159,10 @@ class PaymentController extends Controller
             'body' => $body,
             'request_target' => $requestTarget
         ]);
+    }
+
+    public function handleCallback()
+    {
+        return view('payment.callback');
     }
 }
