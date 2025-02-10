@@ -10,7 +10,10 @@ class HandleDokuTransactionNotif extends Controller
 {
     public function handleNotification(Request $request)
     {
-        // $data = $request->getContent();
+        $data = json_decode($request->getContent(), true);
+        // dd($data);
+
+
 
 
         $notificationHeader = getallheaders();
@@ -30,17 +33,33 @@ class HandleDokuTransactionNotif extends Controller
             $finalSignature = 'HMACSHA256=' . $signature;
             // dd($finalSignature);
             // dd($notificationHeader);
+
+            $invoiceNumber = $data['order']['invoice_number'];
+            $status = strtoupper($data['transaction']['status']);
+    
+            $transaction = Transaction::where('invoice_number', $invoiceNumber)->first();
+
+            $statusMapping = [
+                'SUCCESS' => 'paid',
+                'FAILED' => 'failed',
+                'PENDING' => 'pending',
+            ];
+    
+            if (!$transaction) {
+                return response()->json(['message' => 'Transaction not found'], 404);
+            }
             if ($finalSignature == $notificationHeader['Signature']) {
                 // TODO: Process if Signature is Valid
-                dd('ok');
-                // return response('OK', 200)->header('Content-Type', 'text/plain');
+                // dd('ok');
+                $transaction->update(['status' => $statusMapping[$status]]);
+                return response()->json(['message' => 'Notification received successfully'], 200);
                 
                 // TODO: Do update the transaction status based on the `transaction.status`
             } else {
             
-                dd('tolol');
+                // dd('tolol');
             // TODO: Response with 400 errors for Invalid Signature
-            // return response('Invalid Signature', 400)->header('Content-Type', 'text/plain');
+            return response()->json(['message' => 'Unknown transaction status'], 400);
         }
 
        
