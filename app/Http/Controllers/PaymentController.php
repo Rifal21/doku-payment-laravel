@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Coupon;
 use Illuminate\Http\Request;
 use App\Models\Transaction;
 use App\Models\Product;
@@ -40,15 +41,16 @@ class PaymentController extends Controller
 
     public function getPaymentHeaders(Request $request)
     {
-        // dd($request->all());
+        // dd($request->input('amount'));
         $validated = $request->validate([
             'items' => 'required|array',
             'items.*.product_id' => 'required|integer|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
             'invoice_number' => 'required|string|unique:transactions,invoice_number',
+            'coupon_code' => 'nullable|string',
         ]);
 
-        $amount = 0;
+        $amount = 0.0;
         $orderLines = [];
 
         foreach ($validated['items'] as $item) {
@@ -58,20 +60,39 @@ class PaymentController extends Controller
                 return response()->json(['error' => 'Product not found'], 404);
             }
 
-            $subtotal = $product->price * $item['quantity'];
+            $coupon = Coupon::where('code', $request->input('coupon_code'))->first();
+            if (!$coupon) {                
+                $subtotal = $product->price * $item['quantity'];
+            } else {
+
+                $subtotal = $product->price * $item['quantity'];
+                $discount = ($subtotal * $coupon->discount_percentage) / 100;
+                $subtotal -= $discount; 
+                $coupon->update([
+                    'used_count' => $coupon->used_count + 1
+                ]);
+            }
+            
+            
             $amount += $subtotal;
 
             $orderLines[] = [
                 'name' => $product->name,
-                'price' => intval($product->price),
+                'price' => round($product->price),
                 'quantity' => $item['quantity']
             ];
-        }
 
-        // Validasi ulang amount untuk mencegah manipulasi dari frontend
-        if ($request->input('amount') != $amount) {
-            return response()->json(['error' => 'Invalid total amount'], 400);
+            // dd($orderLines);
         }
+// **Pastikan amount dalam bentuk integer**
+$amount = intval(round($amount));
+
+// dd(intval($request->input('amount'))=== $amount); // Debugging
+
+// **Gunakan intval() untuk memastikan tipe data integer**
+if (intval($request->input('amount')) !== $amount) {
+    return response()->json(['error' => 'AMOUNT NOT MATCH'], 400);
+}
 
         // Simpan transaksi di database
        Transaction::create([
@@ -102,7 +123,7 @@ class PaymentController extends Controller
                 'invoice_number' => $validated['invoice_number'],
                 'callback_url' => url('/payment/callback'),
                 'return_url' => url('/payment/success'),
-                'line_items' => $orderLines,
+                // 'line_items' => $orderLines,
             ],
             'payment' => [
                 'payment_due_date' => 60,
@@ -144,6 +165,7 @@ class PaymentController extends Controller
             ],
         ];
         
+        // dd($body['order']['amount']);
         // Generate Signature
         $signatureData = $this->generateSignature($clientId, $requestId, $requestTimestamp, $requestTarget, $body, $sharedKey);
 

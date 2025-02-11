@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\TransactionItems;
@@ -92,6 +93,36 @@ public function remove($id)
 
 //     return response()->json(['success' => true, 'message' => 'Transaction saved successfully.']);
 // }
+
+    public function applyCoupon(Request $request)
+    {
+
+        $coupon = Coupon::where('code', $request->coupon_code)->first();
+        // dd($coupon);
+
+        if (!$coupon) {
+            return response()->json(['success' => false, 'message' => 'Invalid coupon code']);
+        }
+
+        $cartItems = session()->get('cart', []);
+        // dd($cartItems);
+        $total = 0;
+
+        foreach ($cartItems as $item) {
+            $total += $item['price'] * $item['quantity'];
+        }
+
+        $discount = ($total * $coupon->discount_percentage) / 100;
+        $newTotal = $total - $discount;
+
+        // dd($discount, $newTotal);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Coupon applied! You saved Rp " . number_format($discount, 0, ',', '.'),
+            'newTotal' => $newTotal
+        ]); 
+    }
 
 
 }

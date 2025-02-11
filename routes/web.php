@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminTransactionController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CouponController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductFrontController;
 use App\Http\Controllers\ProfileController;
@@ -53,7 +54,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/cart/update/{id}', [CartController::class, 'update'])->name('cart.update');
     Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
     // Route::post('/cart/checkout', [CartController::class, 'storeTransaction'])->name('cart.checkout');
-
+    Route::post('/cart/apply-coupon', [CartController::class, 'applyCoupon'])->name('cart.applyCoupon');
+    
 });
+Route::resource('/dashboard/coupon' , CouponController::class)->middleware(['auth', 'verified']);
 
 require __DIR__.'/auth.php';

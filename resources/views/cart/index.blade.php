@@ -58,11 +58,25 @@
             @endforeach
             <tr>
                 <td colspan="3" class="text-right font-bold p-2">Total Price:</td>
-                <td class="p-2 font-bold">Rp {{ number_format($totalPrice, 0, ',', '.') }}</td>
+                <td class="p-2 font-bold">Rp <span id="total-price">{{ number_format($totalPrice, 0, ',', '.') }}</span></td>
                 <td></td>
             </tr>
         </tbody>
     </table>
+
+    {{-- Form untuk kode kupon --}}
+    <div class="mt-4 p-4 bg-gray-100 rounded-lg w-full">
+        <form id="couponForm" method="POST" action="{{ route('cart.applyCoupon') }}" class="flex items-center justify-end gap-2">
+            @csrf
+            <input type="text" name="coupon_code" id="couponCode" placeholder="Enter Coupon Code"
+                class="border-gray-300 rounded-md px-3 py-2 w-full">
+            <button type="submit"
+                class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700 ml-3">
+                Apply Coupon
+            </button>
+        </form>
+        <p id="couponMessage" class="text-green-600 mt-2 hidden"></p>
+    </div>
 
     <div class="flex justify-end mt-4">
         <a href="#" id="checkoutButton" onclick="payment()"
@@ -84,13 +98,11 @@
         const cartItems = @json($cartItems);
         const invoice = 'INV' + (Math.floor(Math.random() * 100000) + 100000); 
 
-        // Ambil hanya product_id dan quantity
         const orderItems = Object.keys(cartItems).map(id => ({
             product_id: id,
             quantity: cartItems[id].quantity
         }));
 
-        // 1️⃣ Ambil Header Signature dari Backend Laravel
         fetch("{{ route('payment.headers') }}", {
                 method: "POST",
                 headers: {
@@ -99,8 +111,9 @@
                 },
                 body: JSON.stringify({
                     invoice_number: invoice,
-                    amount: {{ $totalPrice ?? 0 }},
-                    items: orderItems
+                    amount: parseInt($("#total-price").text().replace(/\./g, '')) || {{ $totalPrice ?? 0 }},
+                    items: orderItems , 
+                    coupon_code: $('#couponCode').val().toUpperCase()
                 }),
             })
             .then(response => response.json())
@@ -109,7 +122,6 @@
                     showAlert("Gagal mendapatkan header pembayaran.");
                     return;
                 }
-                // 2️⃣ Kirim Request ke DOKU dengan Header Signature yang Diterima
                 fetch("https://api-sandbox.doku.com" + data.request_target, {
                         method: "POST",
                         headers: data.headers,
@@ -117,27 +129,22 @@
                     })
                     .then(response => response.json())
                     .then(responseData => {
-                        console.log(responseData);
+                        // console.log(responseData);
                         if (responseData.response && responseData.response.payment && responseData.response.payment.url) {
-                            // 3️⃣ Redirect ke halaman pembayaran DOKU
-                            // loadJokulCheckout(responseData.response.payment.url);
                             window.location.href = responseData.response.payment.url;
                         } else {
                             showAlert("Gagal memproses pembayaran.");
                         }
                     })
                     .catch(error => {
+                        console.log(error);
                         showAlert("Terjadi kesalahan saat menghubungi DOKU.");
-                        console.error(error);
                     });
             })
             .catch(error => {
                 showAlert("Gagal mendapatkan signature.");
-                console.error(error);
             });
     }
-
-
 
     function showAlert(message) {
         Swal.fire({
@@ -147,5 +154,33 @@
             confirmButtonText: "Close",
         });
     }
+
+    // Handle kupon
+    $("#couponForm").submit(function (event) {
+        event.preventDefault();
+        const couponCode = $("#couponCode").val();
+
+        $.ajax({
+            url: "{{ route('cart.applyCoupon') }}",
+            method: "POST",
+            data: {
+                _token: "{{ csrf_token() }}",
+                coupon_code: couponCode,
+                cart_items: @json($cartItems),
+            },
+            success: function (response) {
+                if (response.success) {
+                    // console.log(response.newTotal);
+                    $("#couponMessage").removeClass("hidden").text(response.message);
+                    $("#total-price").text(parseFloat(response.newTotal).toLocaleString('id-ID'));
+                } else {
+                    showAlert(response.message);
+                }
+            },
+            error: function () {
+                showAlert("Terjadi kesalahan saat menerapkan kupon.");
+            }
+        });
+    });
 </script>
 @endsection
